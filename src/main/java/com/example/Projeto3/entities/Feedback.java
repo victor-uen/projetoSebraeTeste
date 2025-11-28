@@ -1,0 +1,48 @@
+package com.example.Projeto3.entities;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
+@Table(name = "feedback")
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+
+public class Feedback {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long idFeedback;
+
+    private String titulo;
+
+    @ManyToOne
+    @JoinColumn(name = "idUser")
+    @JsonBackReference(value = "usuario-feedback")
+    private Usuario usuario;
+
+    @Enumerated(EnumType.STRING)
+    private Categoria categoria;
+
+    @Enumerated(EnumType.STRING)
+    private Curso curso;
+
+    private String mensagem;
+    private LocalDateTime data = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
+    private Status status = Status.Pendente;
+
+    @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Comentario> comentarios;
+
+}

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Feedbacks</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+        .edit-btn {
+            background-color: #2196F3;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .nav-links a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #2196F3;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Projeto 3 - Sebrae</h1>
+        
+        <div class="nav-links">
+            <a href="index.html">Gerenciar Usuários</a>
+            <a href="feedback.html">Gerenciar Feedbacks</a>
+        </div>
+        
+        <h2>Gerenciamento de Feedbacks</h2>
+        
+        <div class="section">
+            <h2>Criar Novo Feedback</h2>
+            <form id="feedbackForm">
+                <div class="form-group">
+                    <label for="titulo">Título:</label>
+                    <input type="text" id="titulo" name="titulo" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="usuario">Usuário:</label>
+                    <select id="usuario" name="usuario" required>
+                        <option value="">Selecione um usuário</option>
+                        <!-- Será preenchido via JavaScript -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="categoria">Categoria:</label>
+                    <select id="categoria" name="categoria" required>
+                        <option value="Feedback">Feedback</option>
+                        <option value="Elogio">Elogio</option>
+                        <option value="Reclamacao">Reclamação</option>
+                        <option value="Duvida">Dúvida</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mensagem">Mensagem:</label>
+                    <textarea id="mensagem" name="mensagem" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status" required>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Em_analise">Em análise</option>
+                        <option value="Em_andamento">Em andamento</option>
+                        <option value="Finalizado">Finalizado</option>
+                    </select>
+                </div>
+                
+                <button type="submit">Salvar Feedback</button>
+            </form>
+        </div>
+        
+        <div class="section">
+            <h2>Lista de Feedbacks</h2>
+            <table id="feedbackTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Usuário</th>
+                        <th>Categoria</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Será preenchido via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let feedbacks = [];
+        let usuarios = [];
+        let editingId = null;
+
+        // Função para carregar os usuários
+        async function loadUsuarios() {
+            try {
+                const response = await fetch('/api/usuarios');
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar usuários');
+                }
+                usuarios = await response.json();
+                
+                // Preencher o select de usuários
+                const usuarioSelect = document.getElementById('usuario');
+                usuarioSelect.innerHTML = '<option value="">Selecione um usuário</option>';
+                
+                usuarios.forEach(usuario => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify({idUser: usuario.idUser});
+                    option.textContent = usuario.name_user;
+                    usuarioSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Não foi possível carregar a lista de usuários.');
+            }
+        }
+
+        // Função para carregar os feedbacks
+        async function loadFeedbacks() {
+            try {
+                const response = await fetch('/api/feedbacks');
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar feedbacks');
+                }
+                feedbacks = await response.json();
+                renderFeedbackTable();
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Não foi possível carregar a lista de feedbacks.');
+            }
+        }
+
+        // Função para renderizar a tabela de feedbacks
+        function renderFeedbackTable() {
+            const tableBody = document.querySelector('#feedbackTable tbody');
+            tableBody.innerHTML = '';
+            
+            feedbacks.forEach(feedback => {
+                const row = document.createElement('tr');
+                
+                // Encontrar o nome do usuário
+                const usuario = usuarios.find(u => u.idUser === feedback.usuario?.idUser);
+                const usuarioNome = usuario ? usuario.name_user : 'Desconhecido';
+                
+                // Formatar a data
+                const data = new Date(feedback.data);
+                const dataFormatada = data.toLocaleString();
+                
+                row.innerHTML = `
+                    <td>${feedback.idFeedback}</td>
+                    <td>${feedback.titulo}</td>
+                    <td>${usuarioNome}</td>
+                    <td>${feedback.categoria}</td>
+                    <td>${feedback.status}</td>
+                    <td>${dataFormatada}</td>
+                    <td class="actions">
+                        <button class="edit-btn" onclick="editFeedback(${feedback.idFeedback})">Editar</button>
+                        <button class="delete-btn" onclick="deleteFeedback(${feedback.idFeedback})">Excluir</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Função para criar ou atualizar um feedback
+        async function saveFeedback(event) {
+            event.preventDefault();
+            
+            const titulo = document.getElementById('titulo').value;
+            const usuarioJson = document.getElementById('usuario').value;
+            const categoria = document.getElementById('categoria').value;
+            const mensagem = document.getElementById('mensagem').value;
+            const status = document.getElementById('status').value;
+            
+            if (!titulo || !usuarioJson || !categoria || !mensagem || !status) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+            
+            const usuario = JSON.parse(usuarioJson);
+            
+            const feedbackData = {
+                titulo,
+                usuario,
+                categoria,
+                mensagem,
+                status
+            };
+            
+            try {
+                let url = '/api/feedbacks';
+                let method = 'POST';
+                
+                if (editingId) {
+                    url = `/api/feedbacks/${editingId}`;
+                    method = 'PUT';
+                    feedbackData.idFeedback = editingId;
+                }
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao salvar feedback');
+                }
+                
+                // Limpar o formulário e recarregar os dados
+                document.getElementById('feedbackForm').reset();
+                editingId = null;
+                await loadFeedbacks();
+                
+                alert(editingId ? 'Feedback atualizado com sucesso!' : 'Feedback criado com sucesso!');
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Não foi possível salvar o feedback.');
+            }
+        }
+
+        // Função para editar um feedback
+        function editFeedback(id) {
+            const feedback = feedbacks.find(f => f.idFeedback === id);
+            if (!feedback) return;
+            
+            document.getElementById('titulo').value = feedback.titulo;
+            
+            // Encontrar e selecionar o usuário correto
+            const usuarioSelect = document.getElementById('usuario');
+            for (let i = 0; i < usuarioSelect.options.length; i++) {
+                const option = usuarioSelect.options[i];
+                if (option.value) {
+                    const optionUsuario = JSON.parse(option.value);
+                    if (optionUsuario.idUser === feedback.usuario.idUser) {
+                        usuarioSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            document.getElementById('categoria').value = feedback.categoria;
+            document.getElementById('mensagem').value = feedback.mensagem;
+            document.getElementById('status').value = feedback.status;
+            
+            editingId = id;
+        }
+
+        // Função para excluir um feedback
+        async function deleteFeedback(id) {
+            if (!confirm('Tem certeza que deseja excluir este feedback?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/feedbacks/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao excluir feedback');
+                }
+                
+                await loadFeedbacks();
+                alert('Feedback excluído com sucesso!');
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Não foi possível excluir o feedback.');
+            }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Carregar dados iniciais
+            await loadUsuarios();
+            await loadFeedbacks();
+            
+            // Configurar o formulário
+            document.getElementById('feedbackForm').addEventListener('submit', saveFeedback);
+        });
+    </script>
+</body>
+</html>

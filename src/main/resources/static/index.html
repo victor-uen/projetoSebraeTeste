@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto 3 - Sebrae</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0066cc;
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-edit {
+            background-color: #ffa500;
+        }
+        .btn-delete {
+            background-color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Projeto 3 - Sebrae</h1>
+        
+        <div class="nav-links" style="margin-bottom: 20px; text-align: center;">
+            <a href="index.html" style="margin-right: 20px; color: #0066cc; text-decoration: none; font-weight: bold;">Gerenciar Usuários</a>
+            <a href="feedback.html" style="color: #0066cc; text-decoration: none; font-weight: bold;">Gerenciar Feedbacks</a>
+        </div>
+        
+        <div class="section">
+            <h2>Teste da API</h2>
+            <button id="testHello">Testar Endpoint Hello</button>
+            <div id="helloResult" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="section">
+            <h2>Cadastrar Usuário</h2>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="userName">Nome:</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Senha:</label>
+                    <input type="password" id="userPassword" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>Lista de Usuários</h2>
+            <button id="loadUsers">Carregar Usuários</button>
+            <table id="usersTable" style="margin-top: 15px;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dados serão carregados aqui -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section" id="editSection" style="display: none;">
+            <h2>Editar Usuário</h2>
+            <form id="editForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label for="editUserName">Nome:</label>
+                    <input type="text" id="editUserName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editUserPassword">Nova Senha:</label>
+                    <input type="password" id="editUserPassword" placeholder="Deixe em branco para manter a senha atual">
+                </div>
+                <button type="submit">Atualizar</button>
+                <button type="button" id="cancelEdit">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Testar o endpoint Hello
+        document.getElementById('testHello').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/hello?name=Usuário');
+                const data = await response.text();
+                document.getElementById('helloResult').textContent = data;
+            } catch (error) {
+                console.error('Erro:', error);
+                document.getElementById('helloResult').textContent = 'Erro ao testar o endpoint';
+            }
+        });
+
+        // Cadastrar usuário
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userName = document.getElementById('userName').value;
+            const userPassword = document.getElementById('userPassword').value;
+
+            try {
+                const response = await fetch('/api/usuarios', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name_user: userName,
+                        password: userPassword
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Usuário cadastrado com sucesso!');
+                    document.getElementById('userForm').reset();
+                    loadUsers(); // Recarregar a lista de usuários
+                } else {
+                    alert('Erro ao cadastrar usuário');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao cadastrar usuário');
+            }
+        });
+
+        // Carregar usuários
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/usuarios');
+                const users = await response.json();
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = '';
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.idUser}</td>
+                        <td>${user.name_user}</td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="editUser(${user.idUser}, '${user.name_user}')">Editar</button>
+                            <button class="btn-delete" onclick="deleteUser(${user.idUser})">Excluir</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao carregar usuários');
+            }
+        }
+
+        document.getElementById('loadUsers').addEventListener('click', loadUsers);
+
+        // Editar usuário
+        function editUser(id, name) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editUserName').value = name;
+            document.getElementById('editUserPassword').value = '';
+            document.getElementById('editSection').style.display = 'block';
+        }
+
+        document.getElementById('cancelEdit').addEventListener('click', () => {
+            document.getElementById('editSection').style.display = 'none';
+        });
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('editUserId').value;
+            const userName = document.getElementById('editUserName').value;
+            const userPassword = document.getElementById('editUserPassword').value;
+
+            // Preparar dados para atualização
+            const userData = {
+                name_user: userName
+            };
+
+            // Incluir senha apenas se foi fornecida
+            if (userPassword) {
+                userData.password = userPassword;
+            }
+
+            try {
+                const response = await fetch(`/api/usuarios/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    alert('Usuário atualizado com sucesso!');
+                    document.getElementById('editSection').style.display = 'none';
+                    loadUsers(); // Recarregar a lista de usuários
+                } else {
+                    alert('Erro ao atualizar usuário');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao atualizar usuário');
+            }
+        });
+
+        // Excluir usuário
+        async function deleteUser(id) {
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                try {
+                    const response = await fetch(`/api/usuarios/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Usuário excluído com sucesso!');
+                        loadUsers(); // Recarregar a lista de usuários
+                    } else {
+                        alert('Erro ao excluir usuário');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                    alert('Erro ao excluir usuário');
+                }
+            }
+        }
+
+        // Carregar usuários ao iniciar a página
+        window.addEventListener('load', loadUsers);
+    </script>
+</body>
+</html>

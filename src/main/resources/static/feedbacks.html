@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedbacks</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+</head>
+<body>
+    <header>
+        <h1>Feedbacks</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/usuarios.html">Usuários</a>
+            <a href="/comentarios.html">Comentários</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Criar Novo Feedback</h2>
+        <form id="createFeedbackForm">
+            <label for="titulo">Título:</label>
+            <input type="text" id="titulo" name="titulo" required>
+            <label for="mensagem">Mensagem:</label>
+            <textarea id="mensagem" name="mensagem" required></textarea>
+            <label for="categoria">Categoria:</label>
+            <select id="categoria" name="categoria" required>
+                <option value="Conteudo">Conteudo</option>
+                <option value="Instrutor">Instrutor</option>
+                <option value="Plataforma">Plataforma</option>
+                <option value="Atendimento">Atendimento</option>
+            </select>
+            <label for="curso">Curso:</label>
+            <select id="curso" name="curso" required>
+                <option value="Gestao_Financeira">Gestão Financeira</option>
+                <option value="Marketing_Digital">Marketing Digital</option>
+                <option value="Empreendedorismo">Empreendedorismo</option>
+                <option value="Gestao_de_Pessoas">Gestão de Pessoas</option>
+                <option value="Vendas">Vendas</option>
+                <option value="Inovacao">Inovação</option>
+            </select>
+            <label for="usuarioId">ID do Usuário:</label>
+            <input type="number" id="usuarioId" name="usuarioId" required>
+            <button type="submit">Criar</button>
+        </form>
+
+        <h2>Lista de Feedbacks</h2>
+        <ul id="feedbackList"></ul>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const createFeedbackForm = document.getElementById('createFeedbackForm');
+            const feedbackList = document.getElementById('feedbackList');
+
+            const fetchFeedbacks = async () => {
+                try {
+                    const response = await fetch('/api/feedbacks');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const feedbacks = await response.json();
+                    feedbackList.innerHTML = '';
+                    feedbacks.forEach(feedback => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <strong>ID:</strong> ${feedback.idFeedback} <br>
+                            <strong>Título:</strong> ${feedback.titulo} <br>
+                            <strong>Mensagem:</strong> ${feedback.mensagem} <br>
+                            <strong>Categoria:</strong> ${feedback.categoria} <br>
+                            <strong>Curso:</strong> ${feedback.curso} <br>
+                            <strong>Usuário ID:</strong> ${feedback.usuario ? feedback.usuario.idUser : 'N/A'}
+                        `;
+                        feedbackList.appendChild(li);
+                    });
+                } catch (error) {
+                    console.error('Erro ao buscar feedbacks:', error);
+                    feedbackList.innerHTML = '<li>Erro ao carregar feedbacks.</li>';
+                }
+            };
+
+            createFeedbackForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const titulo = document.getElementById('titulo').value;
+                const mensagem = document.getElementById('mensagem').value;
+                const categoria = document.getElementById('categoria').value;
+                const curso = document.getElementById('curso').value;
+                const usuarioId = document.getElementById('usuarioId').value;
+
+                if (!usuarioId) {
+                    alert('Por favor, insira o ID do usuário.');
+                    return;
+                }
+
+                try {
+                    // 1. Buscar o objeto de usuário completo
+                    const userResponse = await fetch(`/api/usuarios/${usuarioId}`);
+                    if (!userResponse.ok) {
+                        throw new Error('Usuário não encontrado.');
+                    }
+                    const usuario = await userResponse.json();
+
+                    // 2. Montar o objeto de feedback com o usuário aninhado
+                    const feedbackData = {
+                        titulo,
+                        mensagem,
+                        categoria,
+                        curso,
+                        usuario // Envia o objeto de usuário completo
+                    };
+
+                    // 3. Enviar a requisição para criar o feedback
+                    const feedbackResponse = await fetch('/api/feedbacks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(feedbackData),
+                    });
+
+                    if (feedbackResponse.ok) {
+                        createFeedbackForm.reset();
+                        fetchFeedbacks();
+                    } else {
+                        const errorData = await feedbackResponse.text();
+                        console.error('Erro ao criar feedback:', errorData);
+                        alert('Erro ao criar feedback. Verifique o console para mais detalhes.');
+                    }
+                } catch (error) {
+                    console.error('Erro na requisição:', error);
+                    alert(`Erro na requisição: ${error.message}`);
+                }
+            });
+
+            fetchFeedbacks();
+        });
+    </script>
+</body>
+</html>

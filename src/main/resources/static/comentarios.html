@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comentários</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+</head>
+<body>
+    <header>
+        <h1>Comentários</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/usuarios.html">Usuários</a>
+            <a href="/feedbacks.html">Feedbacks</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Criar Novo Comentário</h2>
+        <form id="createComentarioForm">
+            <label for="mensagem">Mensagem:</label>
+            <textarea id="mensagem" name="mensagem" required></textarea>
+            <label for="feedbackId">ID do Feedback:</label>
+            <input type="number" id="feedbackId" name="feedbackId" required>
+            <button type="submit">Criar</button>
+        </form>
+
+        <h2>Lista de Comentários</h2>
+        <div id="comentariosList"></div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const createComentarioForm = document.getElementById('createComentarioForm');
+            const comentariosList = document.getElementById('comentariosList');
+            const feedbackIdInput = document.getElementById('feedbackId');
+
+            const fetchComentarios = async (feedbackId) => {
+                if (!feedbackId) {
+                    comentariosList.innerHTML = '<p>Insira um ID de Feedback para ver os comentários.</p>';
+                    return;
+                }
+                try {
+                    const response = await fetch(`/comentarios/feedback/${feedbackId}`);
+                    if (response.status === 204) {
+                         comentariosList.innerHTML = '<p>Nenhum comentário para este feedback.</p>';
+                         return;
+                    }
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const comentarios = await response.json();
+                    comentariosList.innerHTML = '';
+                     if(comentarios.length === 0){
+                        comentariosList.innerHTML = '<p>Nenhum comentário para este feedback.</p>';
+                        return;
+                    }
+                    comentarios.forEach(comentario => {
+                        const div = document.createElement('div');
+                        div.innerHTML = `
+                            <p><strong>ID:</strong> ${comentario.idComentario}</p>
+                            <p><strong>Mensagem:</strong> ${comentario.mensagem}</p>
+                            <hr>
+                        `;
+                        comentariosList.appendChild(div);
+                    });
+                } catch (error) {
+                    console.error('Erro ao buscar comentários:', error);
+                    comentariosList.innerHTML = '<p>Erro ao carregar comentários.</p>';
+                }
+            };
+
+            feedbackIdInput.addEventListener('input', (e) => {
+                fetchComentarios(e.target.value);
+            });
+
+            createComentarioForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const mensagem = document.getElementById('mensagem').value;
+                const feedbackId = document.getElementById('feedbackId').value;
+
+                try {
+                    const comentarioData = {
+                        mensagem,
+                        feedbackId: parseInt(feedbackId)
+                    };
+
+                    const response = await fetch('/comentarios', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(comentarioData),
+                    });
+
+                    if (response.ok) {
+                        createComentarioForm.reset();
+                        fetchComentarios(feedbackId);
+                    } else {
+                        console.error('Erro ao criar comentário:', response.statusText);
+                        alert('Erro ao criar comentário.');
+                    }
+                } catch (error) {
+                    console.error('Erro na requisição:', error);
+                    alert(`Erro na requisição: ${error.message}`);
+                }
+            });
+
+            // Initial fetch if there's a value
+            if(feedbackIdInput.value) {
+                fetchComentarios(feedbackIdInput.value);
+            } else {
+                 comentariosList.innerHTML = '<p>Insira um ID de Feedback para ver os comentários.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
