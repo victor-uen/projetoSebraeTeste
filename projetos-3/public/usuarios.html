@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+</head>
+<body>
+    <header>
+        <h1>Usuários</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/feedbacks.html">Feedbacks</a>
+            <a href="/comentarios.html">Comentários</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Criar Novo Usuário</h2>
+        <form id="createUserForm">
+            <label for="name_user">Nome:</label>
+            <input type="text" id="name_user" name="name_user" required>
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Criar</button>
+        </form>
+
+        <h2>Lista de Usuários</h2>
+        <ul id="userList"></ul>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const createUserForm = document.getElementById('createUserForm');
+            const userList = document.getElementById('userList');
+
+            const fetchUsers = async () => {
+                try {
+                    const response = await fetch('/api/usuarios');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const users = await response.json();
+                    userList.innerHTML = '';
+                    users.forEach(user => {
+                        const li = document.createElement('li');
+                        li.textContent = `ID: ${user.idUser}, Nome: ${user.name_user}`;
+                        userList.appendChild(li);
+                    });
+                } catch (error) {
+                    console.error('Erro ao buscar usuários:', error);
+                    userList.innerHTML = '<li>Erro ao carregar usuários.</li>';
+                }
+            };
+
+            createUserForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const name_user = document.getElementById('name_user').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch('/api/usuarios', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name_user, password }),
+                    });
+
+                    if (response.ok) {
+                        createUserForm.reset();
+                        fetchUsers();
+                    } else {
+                        console.error('Erro ao criar usuário:', response.statusText);
+                        alert('Erro ao criar usuário.');
+                    }
+                } catch (error) {
+                    console.error('Erro na requisição:', error);
+                    alert('Erro na requisição para criar usuário.');
+                }
+            });
+
+            fetchUsers();
+        });
+    </script>
+</body>
+</html>
